@@ -1,3 +1,24 @@
+# Broken components example: the Dagger issue
+This branch showcases the issue with using Dagger in multiple modules, where all graph dependencies are not available at compile time.
+Without using completely separate `Component`s and our so called _"bridge modules"_, but instead adding directly (as in this example) the business modules into the application component, Dagger fails with the following obscure error:
+
+```
+./gradlew assembleDebug
+e: error: cannot access Entity1Repo
+  class file for com.teamwork.android.samples.clean.data.access.feature1.Entity1Repo not found
+  Consult the following stack trace for details.
+  com.sun.tools.javac.code.Symbol$CompletionFailure: class file for com.teamwork.android.samples.clean.data.access.feature1.Entity1Repo not found
+```
+
+This happens because the dependency `Entity1Repo` is (purposefully) not available at compile time in the `sample-app` module, because of our use of `implementation` dependencies to achieve full separation of layers.
+
+For example:
+The Dagger `ApplicationComponent`, which resides in the `sample-app` module, tries to auto-generate the `Provider` classes to create an instance of `Feature2DetailsPresenter`. The presenter has an `@Inject`able constructor, which takes a `Feature2DetailsInteractor`.
+In order to resolve all dependencies, the component then tries to create an instance of the interactor. The interactor's bound implementation (`Feature2DetailsInteractorImpl`) has its own injectable constructor, which takes an instance of `Entity1Repo`.
+This class is not available from the `sample-app` module, hence the failure.
+
+Feel free to open an issue to discuss the problem or submit a PR with a proposal for a solution.
+
 # Clean Architecture on Android: the Teamwork.com way!
 The purpose of this repository is to showcase, with a very simple (but hopefully clear) sample *Android* project, how we have implemented [Clean Architecture](https://8thlight.com/blog/uncle-bob/2012/08/13/the-clean-architecture.html) in our applications.
 
